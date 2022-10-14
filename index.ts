@@ -17,7 +17,8 @@ const proposedBlocks = new Map<string, number>();
 let top = chainHeight + 1;
 let headersCount = 0;
 
-for (let i = 0; i < 50; i++) {
+const pages = 20; // Every page to the /blockchain API gives us 20 results
+for (let i = 0; i < pages; i++) {
   const headers = await client.blockchain(0, top - 1);
   for (let header of headers.blockMetas) {
     const height = header.header.height;
@@ -45,10 +46,6 @@ do {
   })
   nextKey = res.pagination?.nextKey;
 } while (nextKey?.length)
-
-// for (const [a, b] of proposedBlocks.entries()) {
-//   console.log(`${a},${tendermintToOperator.get(a) ?? "?"},${b}`);
-// }
 
 console.log(`Total blocks scanned: ${headersCount} (from ${chainHeight} to ${top})`);
 
