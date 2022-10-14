@@ -8,20 +8,20 @@ assert(process.env.ENDPOINT, "ENDPOINT must be set");
 const endpoint = process.env.ENDPOINT;
 
 const client = await Tendermint34Client.connect(endpoint);
-const height = (await client.status()).syncInfo.latestBlockHeight;
+const chainHeight = (await client.status()).syncInfo.latestBlockHeight;
 
 /** Map from proposer address to number of proposed blocks */
 const proposedBlocks = new Map<string, number>();
 
 // Top is the value after than the next request's maximum
-let top = height + 1;
+let top = chainHeight + 1;
 let headersCount = 0;
 
-for (let i = 0; i < 20; i++) {
-  const headers = await client.blockchain(0, top);
-  for (let h of headers.blockMetas) {
-    const height = h.header.height;
-    const proposer = toHex(h.header.proposerAddress).toUpperCase();
+for (let i = 0; i < 50; i++) {
+  const headers = await client.blockchain(0, top - 1);
+  for (let header of headers.blockMetas) {
+    const height = header.header.height;
+    const proposer = toHex(header.header.proposerAddress).toUpperCase();
     const count = (proposedBlocks.get(proposer) ?? 0) + 1;
     proposedBlocks.set(proposer, count);
     console.log(`${height}: ${proposer}`);
@@ -35,7 +35,7 @@ const queryClient = QueryClient.withExtensions(client, setupStakingExtension);
 const tendermintToOperator = new Map<string, string>();
 let nextKey: Uint8Array | undefined;
 do {
-  console.log(`Load page ...`);
+  console.log(`Load validators page ...`);
   const res = await queryClient.staking.validators("BOND_STATUS_BONDED", nextKey);
   res.validators.forEach((r) => {
     assert(r.consensusPubkey);
@@ -46,13 +46,13 @@ do {
   nextKey = res.pagination?.nextKey;
 } while (nextKey?.length)
 
-for (const [a, b] of proposedBlocks.entries()) {
-  console.log(`${a},${tendermintToOperator.get(a) ?? "?"},${b}`);
-}
+// for (const [a, b] of proposedBlocks.entries()) {
+//   console.log(`${a},${tendermintToOperator.get(a) ?? "?"},${b}`);
+// }
 
-console.log(`Total headers processed: ${headersCount}`);
+console.log(`Total blocks scanned: ${headersCount} (from ${chainHeight} to ${top})`);
 
-const res = await client.validatorsAll(height);
+const res = await client.validatorsAll(chainHeight);
 
 for (const val of res.validators) {
   const address = toHex(val.address).toUpperCase();
