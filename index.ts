@@ -25,7 +25,15 @@ for (let i = 0; i < pages; i++) {
     const proposer = toHex(header.header.proposerAddress).toUpperCase();
     const count = (proposedBlocks.get(proposer) ?? 0) + 1;
     proposedBlocks.set(proposer, count);
-    console.log(`${height}: ${proposer}`);
+
+    const resultsResult = await client.blockResults(height);
+    // See https://github.com/tendermint/tendermint/issues/9555
+    const [gasUsed, gasWanted] = resultsResult.results.reduce((acc, current) => {
+      return [acc[0] + current.gasUsed, acc[1] + current.gasWanted];
+    }, [0, 0]);
+
+    // CSV format height,proposer,num_txs,gas_used,gas_wanted
+    console.log(`${height},${proposer},${header.numTxs},${gasUsed},${gasWanted}`);
     top = Math.min(top, height);
     headersCount += 1;
   }
