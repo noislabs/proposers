@@ -17,7 +17,10 @@ const proposedBlocks = new Map<string, number>();
 let top = chainHeight + 1;
 let headersCount = 0;
 
-const pages = 20; // Every page to the /blockchain API gives us 20 results
+// CSV header
+console.log("height,proposer,num_txs,gas_used,gas_wanted");
+
+const pages = 10; // Every page to the /blockchain API gives us 20 results
 for (let i = 0; i < pages; i++) {
   const headers = await client.blockchain(0, top - 1);
   for (let header of headers.blockMetas) {
